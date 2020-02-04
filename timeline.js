@@ -98,6 +98,7 @@ let more = article.children[2].firstElementChild;
 let p = 1;
 // 1페이지 호출 후 p가 2로 늘어남 (1만큼) - 증가연산은 값 평가 이후 수행됨
 const timelineList = await fetchApiData(url, p++);
+
 const divide = function(list, size) {
     const copy = list.slice();
     const cnt = Math.floor(copy.length / size);
@@ -108,38 +109,51 @@ const divide = function(list, size) {
     }
     return listList;
 };
-const listList = divide(timelineList, 3);
-listList.forEach(list => {
-    grid.insertAdjacentHTML('beforeend', `
+const addPhotos = function(timelineList, noPerRow){
+    const listList = divide(timelineList, noPerRow);
+    listList.forEach(list => {
+        grid.insertAdjacentHTML('beforeend', `
         <div class="Nnq7C weEfm">
         </div>
-    `);
-    let row = grid.lastElementChild;
-
-    list.forEach(data => {
-        row.insertAdjacentHTML('beforeend', `
-            <div class="v1Nh3 kIKUG _bz0w">
-                <a href="javascript:;">
-                    <div class="eLAPa">
-                        <div class="KL4Bh"><img class="FFVAD" decoding="auto" src="${IMG_PATH}${data.img}" style="object-fit: cover;"></div>
-                    </div>
-                </a>
-            </div>
         `);
+        let row = grid.lastElementChild;
+        
+        list.forEach(data => {
+            row.insertAdjacentHTML('beforeend', `
+            <div class="v1Nh3 kIKUG _bz0w">
+            <a href="javascript:;">
+            <div class="eLAPa">
+            <div class="KL4Bh"><img class="FFVAD" decoding="auto" src="${IMG_PATH}${data.img}" style="object-fit: cover;"></div>
+            </div>
+            </a>
+            </div>
+            `);
+        });
     });
-});
-
-// 필요한 시점에 로딩바(의 부모 래퍼div), 더보기버튼(의 부모 래퍼div) display: none; 제거
-more.parentElement.style.display = '';
-// more.parentElement.style.display = 'none';
-loading.parentElement.style.display = '';
-// loading.parentElement.style.display = 'none';
-console.log('>> p: ', p);
-console.log('>> totalPage: ', totalPage);
-const clickMore = function(e) {
-    alert('더보기 로직개발 필요');
 }
-// 필요한 시점에 추가한 이벤트리스너 제거
-more.addEventListener('click', clickMore);
-// more.removeEventListener('click', clickMore);
+const clickMore = async function(e) {
+    
+    more.parentElement.style.display = 'none';
+    loading.parentElement.style.display = '';
+    
+    const timelineList = await fetchApiData(url, p++);
+    addPhotos(timelineList, 3);
+
+    loading.parentElement.style.display = 'none';
+
+    if(totalPage < p){
+        more.removeEventListener('click', clickMore);
+    }
+    else{
+        more.parentElement.style.display = '';
+    }
+}
+
+addPhotos(timelineList, 3);
+
+if(totalPage >= p){
+    more.parentElement.style.display = '';
+    more.addEventListener('click', clickMore);
+}
+
 })();
