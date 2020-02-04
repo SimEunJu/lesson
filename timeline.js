@@ -20,20 +20,13 @@ main.innerHTML = `
 let page = main.firstElementChild;
 const url = 'https://my-json-server.typicode.com/it-crafts/lesson/timeline/';
 
-const infoData = await fetchApiData(url);
-const totalPage = infoData.totalPage * 1;
-const profileData = infoData.profile;
-const scaleDown = numstring => {
-    const num = numstring.replace(/,/g, '');
-    if(num >= 1000000) {
-        return Math.floor(num / 100000) / 10 + '백만'
-    }
-    if(num >= 1000) {
-        return Math.floor(num / 100) / 10 + '천'
-    }
-    return num;
-};
-page.insertAdjacentHTML('afterbegin', `
+let totalPage = 0;
+
+fetchApiData(url).then(result => {
+    const infoData = result;
+    totalPage = infoData.totalPage * 1;
+    const profileData = infoData.profile;
+    page.insertAdjacentHTML('afterbegin', `
     <header class="HVbuG">
         <div class="XjzKX">
             <div class="RR-M- h5uC0" role="button" tabindex="0">
@@ -70,7 +63,8 @@ page.insertAdjacentHTML('afterbegin', `
         <a class="_9VEo1" href="javascript:;" data-type="feed"><span aria-label="피드" class="glyphsSpritePhoto_list__outline__24__grey_5 u-__7"></span></a>
         <a class="_9VEo1" href="javascript:;" data-type=""><span aria-label="태그됨" class="glyphsSpriteTag_up__outline__24__grey_5 u-__7"></span></a>
     </div>
-`);
+    `);
+});
 page.insertAdjacentHTML('beforeend', `
     <div class="_2z6nI">
         <div style="flex-direction: column;">
@@ -90,6 +84,16 @@ page.insertAdjacentHTML('beforeend', `
         </div>
     </div>
 `);
+const scaleDown = numstring => {
+    const num = numstring.replace(/,/g, '');
+    if(num >= 1000000) {
+        return Math.floor(num / 100000) / 10 + '백만'
+    }
+    if(num >= 1000) {
+        return Math.floor(num / 100) / 10 + '천'
+    }
+    return num;
+};
 // article태그 DOM트리 탐색이 반복되므로, article 변수에 담아 객체 캐싱
 const article = page.querySelector('article');
 let grid = article.children[0].firstElementChild;
@@ -97,7 +101,15 @@ let loading = article.children[1].firstElementChild;
 let more = article.children[2].firstElementChild;
 let p = 1;
 // 1페이지 호출 후 p가 2로 늘어남 (1만큼) - 증가연산은 값 평가 이후 수행됨
-const timelineList = await fetchApiData(url, p++);
+fetchApiData(url, p++).then(result => {
+    const timelineList = result;
+    addPhotos(timelineList, 3);
+
+    if(totalPage >= p){
+        more.parentElement.style.display = '';
+        more.addEventListener('click', clickMore);
+    }
+});
 
 const divide = function(list, size) {
     const copy = list.slice();
@@ -147,13 +159,6 @@ const clickMore = async function(e) {
     else{
         more.parentElement.style.display = '';
     }
-}
-
-addPhotos(timelineList, 3);
-
-if(totalPage >= p){
-    more.parentElement.style.display = '';
-    more.addEventListener('click', clickMore);
 }
 
 })();
