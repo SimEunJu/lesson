@@ -64,6 +64,12 @@ fetchApiData(url).then(result => {
         <a class="_9VEo1" href="javascript:;" data-type=""><span aria-label="태그됨" class="glyphsSpriteTag_up__outline__24__grey_5 u-__7"></span></a>
     </div>
     `);
+    
+    if(totalPage >= p){
+        const more = page.querySelector('article').children[2].firstElementChild;
+        more.parentElement.style.display = '';
+        more.addEventListener('click', clickMore);
+    }
 });
 page.insertAdjacentHTML('beforeend', `
     <div class="_2z6nI">
@@ -104,11 +110,6 @@ let p = 1;
 fetchApiData(url, p++).then(result => {
     const timelineList = result;
     addPhotos(timelineList, 3);
-
-    if(totalPage >= p){
-        more.parentElement.style.display = '';
-        more.addEventListener('click', clickMore);
-    }
 });
 
 const divide = function(list, size) {
