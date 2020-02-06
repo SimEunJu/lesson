@@ -22,6 +22,8 @@ const url = 'https://my-json-server.typicode.com/it-crafts/lesson/timeline/';
 
 let totalPage = 0;
 
+/* TODO then을 사용하는 게 잘못된 건 아닌데, 콜백이 강제되어 바람직하진 않습니다
+가능하면 async-await 구조로, 비동기 로직이 동기 코드로 흐를 수 있도록 해주세요 */
 fetchApiData(url).then(result => {
     const infoData = result;
     totalPage = infoData.totalPage * 1;
@@ -65,6 +67,11 @@ fetchApiData(url).then(result => {
     </div>
     `);
     
+    /* TODO info가 page보다 먼저 완료될 경우, 콘텐츠 노출 전 더보기버튼 노출 후 콘텐츠 노출 후 밀려납니다
+    큰 이슈는 없으나, 바람직한 UX는 아닐 것 같습니다
+    보장받을 수 있도록 호출구조를 변경하거나, Promise.all()과 같은 API를 활용하면 좋을 것 같습니다 */
+    // COMMENT 필요한 시점에 리스너 붙인 것 잘 하셨습니다
+    console.log(p);
     if(totalPage >= p){
         const more = page.querySelector('article').children[2].firstElementChild;
         more.parentElement.style.display = '';
@@ -107,10 +114,11 @@ let loading = article.children[1].firstElementChild;
 let more = article.children[2].firstElementChild;
 let p = 1;
 // 1페이지 호출 후 p가 2로 늘어남 (1만큼) - 증가연산은 값 평가 이후 수행됨
-fetchApiData(url, p++).then(result => {
-    const timelineList = result;
-    addPhotos(timelineList, 3);
-});
+// TODO 아래 로직은 clickMore로직 자체로 공통화할 수 있을 것 같습니다 (clickMore호출 추가 해두었습니다)
+// fetchApiData(url, p++).then(result => {
+//     const timelineList = result;
+//     addPhotos(timelineList, 3);
+// });
 
 const divide = function(list, size) {
     const copy = list.slice();
@@ -144,6 +152,9 @@ const addPhotos = function(timelineList, noPerRow){
         });
     });
 }
+
+// TODO 로직 공통화로, 노출로직 수정이 필요해 보입니다 (Promise.all() 활용 해보세요)
+// COMMENT clickMore 내부 로딩바/더보기버튼 UI 노출로직 깔끔하게 잘 처리 되었습니다
 const clickMore = async function(e) {
     
     more.parentElement.style.display = 'none';
@@ -161,5 +172,6 @@ const clickMore = async function(e) {
         more.parentElement.style.display = '';
     }
 }
+clickMore();
 
 })();
