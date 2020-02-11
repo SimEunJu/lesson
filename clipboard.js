@@ -209,7 +209,7 @@ const grid = await (async ($parent, url) => {
     };
     const listList = divide(timelineList, ITEM_PER_ROW);
 
-    let timelineOriginal = [...timelineList];
+    let timelineUse = [...timelineList];
     const filter = (evt) => {
         // TODO 검색창 input에 key이벤트 발생시 검색로직 수행
         //if(evt.key !== 'Enter') return;
@@ -223,7 +223,7 @@ const grid = await (async ($parent, url) => {
         const timelineSearched = divide(timelineFiltered, ITEM_PER_ROW);
         renderGridImgs(timelineSearched);
 
-        timelineOriginal = timelineFiltered;
+        timelineUse = timelineFiltered;
     }
    
     const sort = (evt) => {
@@ -243,7 +243,7 @@ const grid = await (async ($parent, url) => {
 
         $el.lastElementChild.firstElementChild.innerHTML = '';
 
-        const timelineCopied = [...timelineOriginal];
+        const timelineCopied = [...timelineUse];
         const timelineSorted = divide(timelineCopied.sort(comparator), ITEM_PER_ROW);
         renderGridImgs(timelineSorted);
     }
