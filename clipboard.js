@@ -230,7 +230,7 @@ const grid = await (async ($parent, url) => {
                 comparator = (a, b) => new Date(a) - new Date(b)
                 break;
             case 'popular':
-                comparator = (a, b) => (0.7*parseInt(b.clipCount)+0.3*parseInt(b.commentCount)) - (0.7*parseInt(a.clipCount)+0.3*parseInt(a.commentCount))
+                comparator = (a, b) => (parseInt(b.clipCount)+2*parseInt(b.commentCount)) - (parseInt(a.clipCount)+2*parseInt(a.commentCount))
                 break;
             default:
                 return;
@@ -239,7 +239,7 @@ const grid = await (async ($parent, url) => {
         $el.lastElementChild.firstElementChild.innerHTML = '';
 
         const timelineCopied = [...timelineList];
-        const timelineSorted = divide(timelineCopied.sort(comparator),ITEM_PER_ROW);
+        const timelineSorted = divide(timelineCopied.sort(comparator), ITEM_PER_ROW);
         renderGridImgs(timelineSorted);
     }
 
