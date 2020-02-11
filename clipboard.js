@@ -137,6 +137,46 @@ const timelineContent = (($parent) => {
     return { $el }
 })(timeline.$el);
 
+const renderGridImgs = (imgList) => {
+    imgList.forEach(list => {
+        const gridItem = (($parent, list) => {
+            let $el;
+    
+            const create = () => {
+                render(list);
+                $el = $parent.lastElementChild;
+            }
+    
+            const render = (list) => {
+                const html = list.reduce((html, data) => {
+                    const img = (data.img || '') && `
+                        <a href="javascript:;">
+                            <div class="eLAPa">
+                                <div class="KL4Bh">
+                                    <img class="FFVAD" decoding="auto" src="${common.IMG_PATH}${data.img}" style="object-fit: cover;">
+                                </div>
+                            </div>
+                        </a>
+                    `;
+                    html += `
+                        <div class="v1Nh3 kIKUG _bz0w">${img}</div>
+                    `;
+                    return html;
+                }, '');
+                
+                $parent.insertAdjacentHTML('beforeend', `
+                    <div class="Nnq7C weEfm">
+                        ${html}
+                    </div>
+                `);
+            }
+        
+            create();
+            return { $el }
+        })(grid.$el.lastElementChild.firstElementChild, list);
+    });
+}
+
 const grid = await (async ($parent, url) => {
     let $el;
 
@@ -150,6 +190,8 @@ const grid = await (async ($parent, url) => {
     }
 
     const divide = (list, size) => {
+        if(list.length === 0) return [];
+
         const copy = [...list];
         const cnt = Math.ceil(copy.length / size);
     
@@ -167,26 +209,48 @@ const grid = await (async ($parent, url) => {
     };
     const listList = divide(timelineList, ITEM_PER_ROW);
 
-    const filter = () => {
+    const filter = (evt) => {
         // TODO 검색창 input에 key이벤트 발생시 검색로직 수행
-        $el.lastElementChild.firstElementChild.innerHTML = '';
-        divide(timelineList.filter(/* TODO */), ITEM_PER_ROW)
-            .forEach(list => {/* TODO */});
-    }
+        if(evt.key !== 'Enter') return;
 
-    const sort = () => {
-        // TODO 최신순/인기순 클릭시 해당 정렬로직 수행
         $el.lastElementChild.firstElementChild.innerHTML = '';
-        divide(timelineList.sort(/* TODO */), ITEM_PER_ROW)
-            .forEach(list => {/* TODO */});
+        
+        const searchKeyword = evt.target.value;
+        const predicate = item => item.name.includes(searchKeyword) || item.text.includes(searchKeyword);
+        const timelineSearched = divide(timelineList.filter(predicate), ITEM_PER_ROW);
+        renderGridImgs(timelineSearched);
+    }
+   
+    const sort = (evt) => {
+        // TODO 최신순/인기순 클릭시 해당 정렬로직 수행
+        const sortType = evt.target.dataset.sort;
+        let comparator = null;
+        switch (sortType) {
+            case 'latest':
+                comparator = (a, b) => new Date(a) - new Date(b)
+                break;
+            case 'popular':
+                comparator = (a, b) => (0.7*parseInt(b.clipCount)+0.3*parseInt(b.commentCount)) - (0.7*parseInt(a.clipCount)+0.3*parseInt(a.commentCount))
+                break;
+            default:
+                return;
+        }
+
+        $el.lastElementChild.firstElementChild.innerHTML = '';
+
+        const timelineCopied = [...timelineList];
+        const timelineSorted = divide(timelineCopied.sort(comparator),ITEM_PER_ROW);
+        renderGridImgs(timelineSorted);
     }
 
     const render = () => {
         $parent.insertAdjacentHTML('beforeend', `
             <article class="FyNDV">
                 <div class="Igw0E rBNOH YBx95 ybXk5 _4EzTm soMvl JI_ht bkEs3 DhRcB">
-                    <button class="sqdOP L3NKy y3zKF JI_ht" type="button">최신순</button>
-                    <button class="sqdOP L3NKy y3zKF JI_ht" type="button">인기순</button>
+                    <div class="sort_btns" style="display: flex; flex-direction: row;">
+                        <button class="sqdOP L3NKy y3zKF JI_ht" type="button" data-sort="latest">최신순</button>
+                        <button class="sqdOP L3NKy y3zKF JI_ht" type="button" data-sort="popular">인기순</button>
+                    </div>
                     <h1 class="K3Sf1">
                         <div class="Igw0E rBNOH eGOV_ ybXk5 _4EzTm">
                             <div class="Igw0E IwRSH eGOV_ vwCYk">
@@ -217,45 +281,11 @@ const grid = await (async ($parent, url) => {
     }
 
     create();
+    $el.querySelector('input').addEventListener('keyup', filter);
+    $el.querySelector('.sort_btns').addEventListener('click', sort);
     return { $el, listList }
 })(timelineContent.$el.firstElementChild, timeline.url);
 
-grid.listList.forEach(list => {
-    const gridItem = (($parent, list) => {
-        let $el;
-
-        const create = () => {
-            render(list);
-            $el = $parent.lastElementChild;
-        }
-
-        const render = (list) => {
-            const html = list.reduce((html, data) => {
-                const img = (data.img || '') && `
-                    <a href="javascript:;">
-                        <div class="eLAPa">
-                            <div class="KL4Bh">
-                                <img class="FFVAD" decoding="auto" src="${common.IMG_PATH}${data.img}" style="object-fit: cover;">
-                            </div>
-                        </div>
-                    </a>
-                `;
-                html += `
-                    <div class="v1Nh3 kIKUG _bz0w">${img}</div>
-                `;
-                return html;
-            }, '');
-            
-            $parent.insertAdjacentHTML('beforeend', `
-                <div class="Nnq7C weEfm">
-                    ${html}
-                </div>
-            `);
-        }
-    
-        create();
-        return { $el }
-    })(grid.$el.lastElementChild.firstElementChild, list);
-});
+renderGridImgs(grid.listList);
 
 })();
