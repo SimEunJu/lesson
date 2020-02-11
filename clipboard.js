@@ -209,16 +209,21 @@ const grid = await (async ($parent, url) => {
     };
     const listList = divide(timelineList, ITEM_PER_ROW);
 
+    let timelineOriginal = [...timelineList];
     const filter = (evt) => {
         // TODO 검색창 input에 key이벤트 발생시 검색로직 수행
-        if(evt.key !== 'Enter') return;
-
-        $el.lastElementChild.firstElementChild.innerHTML = '';
+        //if(evt.key !== 'Enter') return;
         
         const searchKeyword = evt.target.value;
+
+        $el.lastElementChild.firstElementChild.innerHTML = '';
+
         const predicate = item => item.name.includes(searchKeyword) || item.text.includes(searchKeyword);
-        const timelineSearched = divide(timelineList.filter(predicate), ITEM_PER_ROW);
+        const timelineFiltered = timelineList.filter(predicate);
+        const timelineSearched = divide(timelineFiltered, ITEM_PER_ROW);
         renderGridImgs(timelineSearched);
+
+        timelineOriginal = timelineFiltered;
     }
    
     const sort = (evt) => {
@@ -238,7 +243,7 @@ const grid = await (async ($parent, url) => {
 
         $el.lastElementChild.firstElementChild.innerHTML = '';
 
-        const timelineCopied = [...timelineList];
+        const timelineCopied = [...timelineOriginal];
         const timelineSorted = divide(timelineCopied.sort(comparator), ITEM_PER_ROW);
         renderGridImgs(timelineSorted);
     }
