@@ -187,6 +187,10 @@ const grid = await (async ($parent, url) => {
     const create = () => {
         render();
         $el = $parent.lastElementChild;
+        // 검색 버튼
+        $el.querySelector('input').addEventListener('keyup', filter);
+        // 정렬 버튼
+        $el.querySelector('.sort_btns').addEventListener('click', sort);
     }
 
     const divide = (list, size) => {
@@ -286,9 +290,8 @@ const grid = await (async ($parent, url) => {
     }
 
     create();
-    $el.querySelector('input').addEventListener('keyup', filter);
-    $el.querySelector('.sort_btns').addEventListener('click', sort);
-    return { $el, listList }
+    
+    return { $el, listList };
 })(timelineContent.$el.firstElementChild, timeline.url);
 
 renderGridImgs(grid.listList);
