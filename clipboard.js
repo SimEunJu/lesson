@@ -236,7 +236,7 @@ const grid = await (async ($parent, url) => {
         let comparator = null;
         switch (sortType) {
             case 'latest':
-                comparator = (a, b) => new Date(a) - new Date(b)
+                comparator = (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
                 break;
             case 'popular':
                 comparator = (a, b) => (parseInt(b.clipCount)+2*parseInt(b.commentCount)) - (parseInt(a.clipCount)+2*parseInt(a.commentCount))
