@@ -137,6 +137,7 @@ const timelineContent = (($parent) => {
     return { $el }
 })(timeline.$el);
 
+// COMMENT 잘 분리하셨습니다, 현재시점에 가장 적절한 재사용 가능한 로직입니다
 const renderGridImgs = (imgList) => {
     imgList.forEach(list => {
         const gridItem = (($parent, list) => {
@@ -187,8 +188,9 @@ const grid = await (async ($parent, url) => {
     const create = () => {
         render();
         $el = $parent.lastElementChild;
+        // COMMENT DOM 룩업범위가 컴포넌트 내부로 잘 한정 되었습니다.
         // 검색 버튼
-        $el.querySelector('input').addEventListener('keyup', filter);
+        $el.querySelector('.srch_bar input').addEventListener('keyup', filter);
         // 정렬 버튼
         $el.querySelector('.sort_btns').addEventListener('click', sort);
     }
@@ -213,15 +215,19 @@ const grid = await (async ($parent, url) => {
     };
     const listList = divide(timelineList, ITEM_PER_ROW);
 
+    // FIXME 검색 > 정렬버튼 > 검색종료(창비움) > 정렬순서 유지되도록 고도화 해주세요
+    /* TODO 현재 정렬결과/검색결과를 timelineUse에 담아서 공유하고 있는데
+    정렬은 timelineList 자체의 순서를 섞고, 검색결과만 임시변수에 담는 게 조금 더 매끄러워질 것 같습니다
+    현재는 "나" 치고 > 인기순 누르고 > "나연" 까지 추가로 치면 최신순으로 돌아갑니다 */
     let timelineUse = [...timelineList];
+
     const filter = (evt) => {
-        // TODO 검색창 input에 key이벤트 발생시 검색로직 수행
-        //if(evt.key !== 'Enter') return;
-        
         const searchKeyword = evt.target.value;
 
         $el.lastElementChild.firstElementChild.innerHTML = '';
 
+        /* COMMENT predicate랑 comparator는 동일로직이 계속 재사용되므로, 성능을 위해 밖으로 뺄 수도 있을 것 같습니다
+        그런데, 로직 응집도를 위해 여기에 그대로 있는 게 더 나을 수도 있을 것 같습니다 (참고만 해주세요) */
         const predicate = item => item.name.includes(searchKeyword) || item.text.includes(searchKeyword);
         const timelineFiltered = timelineList.filter(predicate);
         const timelineSearched = divide(timelineFiltered, ITEM_PER_ROW);
@@ -231,24 +237,17 @@ const grid = await (async ($parent, url) => {
     }
    
     const sort = (evt) => {
-        // TODO 최신순/인기순 클릭시 해당 정렬로직 수행
         const sortType = evt.target.dataset.sort;
-        let comparator = null;
-        switch (sortType) {
-            case 'latest':
-                comparator = (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
-                break;
-            case 'popular':
-                comparator = (a, b) => (parseInt(b.clipCount)+2*parseInt(b.commentCount)) - (parseInt(a.clipCount)+2*parseInt(a.commentCount))
-                break;
-            default:
-                return;
-        }
 
         $el.lastElementChild.firstElementChild.innerHTML = '';
 
+        // TODO 적절한 패턴 활용하여, 스위치문을 조금 더 견고한 방향으로 리팩토링 했습니다 (수정완료)
+        const comparator = {
+            latest: (a, b) => new Date(b.timestamp) - new Date(a.timestamp),
+            popular: (a, b) => (parseInt(b.clipCount)+2*parseInt(b.commentCount)) - (parseInt(a.clipCount)+2*parseInt(a.commentCount)),
+        }
         const timelineCopied = [...timelineUse];
-        const timelineSorted = divide(timelineCopied.sort(comparator), ITEM_PER_ROW);
+        const timelineSorted = divide(timelineCopied.sort(comparator[sortType]), ITEM_PER_ROW);
         renderGridImgs(timelineSorted);
     }
 
@@ -260,7 +259,7 @@ const grid = await (async ($parent, url) => {
                         <button class="sqdOP L3NKy y3zKF JI_ht" type="button" data-sort="latest">최신순</button>
                         <button class="sqdOP L3NKy y3zKF JI_ht" type="button" data-sort="popular">인기순</button>
                     </div>
-                    <h1 class="K3Sf1">
+                    <h1 class="K3Sf1 srch_bar">
                         <div class="Igw0E rBNOH eGOV_ ybXk5 _4EzTm">
                             <div class="Igw0E IwRSH eGOV_ vwCYk">
                                 <div class="Igw0E IwRSH eGOV_ ybXk5 _4EzTm">
