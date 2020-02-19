@@ -137,9 +137,118 @@ const timelineContent = (($parent) => {
     return { $el }
 })(timeline.$el);
 
-// COMMENT 잘 분리하셨습니다, 현재시점에 가장 적절한 재사용 가능한 로직입니다
-const renderGridImgs = (imgList) => {
-    imgList.forEach(list => {
+const grid = await (async ($parent, url) => {
+    let $el;
+
+    let page = 1;
+    const ITEM_PER_ROW = 3;
+    const timelineList = await common.fetchApiData(url, page++);
+    let keyword = '';
+
+    const create = () => {
+        render();
+        $el = $parent.lastElementChild;
+        addEvent();
+    }
+
+    const addEvent = () => {
+        $el.firstElementChild.lastElementChild.querySelector('input')
+            .addEventListener('keyup', keyup);
+        $el.firstElementChild.addEventListener('click', click);
+    }
+
+    const keyup = function(e) {
+        keyword = this.value;
+        $el.lastElementChild.firstElementChild.innerHTML = '';
+        renderGridItem(divide(filter(timelineList), ITEM_PER_ROW));
+    }
+
+    const click = function(e) {
+        const kind = e.target.dataset.kind;
+        if(!kind) {
+            return;
+        }
+        $el.lastElementChild.firstElementChild.innerHTML = '';
+        renderGridItem(divide(sort(kind), ITEM_PER_ROW));
+    }
+
+    const filter = (list) => {
+        if(!keyword) {
+            return list;
+        }
+        return list.filter(i => (i.text + i.name).includes(keyword));
+    }
+
+    const comparator = {
+        popular: (a, b) => b.clipCount * 1 + b.commentCount * 2 - a.clipCount * 1 + a.commentCount * 2,
+        lastest: (a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp),
+    }
+    const sort = (kind) => {
+        timelineList.sort(comparator[kind]);
+        return filter(timelineList);
+    }
+
+    const divide = (list, size) => {
+        const copy = [...list];
+        const cnt = Math.ceil(copy.length / size);
+    
+        const listList = [];
+        for(let i = 0; i < cnt; i++) {
+            listList.push(copy.splice(0, size));
+        }
+
+        if(listList.length !== 0) {
+            const lastlist = listList[listList.length - 1];
+            for(let i = lastlist.length; i < size; i++) {
+                lastlist[i] = {};
+            }
+        }
+        
+        return listList;
+    };
+    const listList = divide(timelineList, ITEM_PER_ROW);
+
+    const render = () => {
+        $parent.insertAdjacentHTML('beforeend', `
+            <article class="FyNDV">
+                <div class="Igw0E rBNOH YBx95 ybXk5 _4EzTm soMvl JI_ht bkEs3 DhRcB">
+                    <button data-kind="lastest" class="sqdOP L3NKy y3zKF JI_ht" type="button">최신순</button>
+                    <button data-kind="popular" class="sqdOP L3NKy y3zKF JI_ht" type="button">인기순</button>
+                    <h1 class="K3Sf1">
+                        <div class="Igw0E rBNOH eGOV_ ybXk5 _4EzTm">
+                            <div class="Igw0E IwRSH eGOV_ vwCYk">
+                                <div class="Igw0E IwRSH eGOV_ ybXk5 _4EzTm">
+                                    <div class="Igw0E IwRSH eGOV_ vwCYk">
+                                        <label class="NcCcD">
+                                            <input autocapitalize="none" autocomplete="off" class="j_2Hd iwQA6 RO68f M5V28" placeholder="검색" spellcheck="true" type="search" value="" />
+                                            <div class="DWAFP">
+                                                <div class="Igw0E IwRSH eGOV_ _4EzTm">
+                                                    <span aria-label="검색" class="glyphsSpriteSearch u-__7"></span>
+                                                </div>
+                                                <span class="rwQu7">검색</span>
+                                            </div>
+                                            <div class="Igw0E rBNOH YBx95 _4EzTm ItkAi O1flK fm1AK TxciK yiMZG"></div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </h1>
+                </div>
+                <div>
+                    <div style="flex-direction: column; padding-bottom: 0px; padding-top: 0px;">
+                    </div>
+                </div>
+            </article>
+        `);
+    }
+
+    create();
+    return { $el, listList }
+})(timelineContent.$el.firstElementChild, timeline.url);
+
+const renderGridItem = (list) => {
+    list.forEach(list => {
         const gridItem = (($parent, list) => {
             let $el;
     
@@ -177,122 +286,6 @@ const renderGridImgs = (imgList) => {
         })(grid.$el.lastElementChild.firstElementChild, list);
     });
 }
-
-const grid = await (async ($parent, url) => {
-    let $el;
-
-    let page = 1;
-    const ITEM_PER_ROW = 3;
-    const timelineList = await common.fetchApiData(url, page++);
-
-    const create = () => {
-        render();
-        $el = $parent.lastElementChild;
-        // COMMENT DOM 룩업범위가 컴포넌트 내부로 잘 한정 되었습니다.
-        // 검색 버튼
-        $el.querySelector('.srch_bar input').addEventListener('keyup', filter);
-        // 정렬 버튼
-        $el.querySelector('.sort_btns').addEventListener('click', sort);
-    }
-
-    const divide = (list, size) => {
-        if(list.length === 0) return [];
-
-        const copy = [...list];
-        const cnt = Math.ceil(copy.length / size);
-    
-        const listList = [];
-        for(let i = 0; i < cnt; i++) {
-            listList.push(copy.splice(0, size));
-        }
-
-        const lastlist = listList[listList.length - 1];
-        for(let i = lastlist.length; i < size; i++) {
-            lastlist[i] = {};
-        }
-        
-        return listList;
-    };
-    const listList = divide(timelineList, ITEM_PER_ROW);
-
-    // FIXME 검색 > 정렬버튼 > 검색종료(창비움) > 정렬순서 유지되도록 고도화 해주세요
-    /* TODO 현재 정렬결과/검색결과를 timelineUse에 담아서 공유하고 있는데
-    정렬은 timelineList 자체의 순서를 섞고, 검색결과만 임시변수에 담는 게 조금 더 매끄러워질 것 같습니다
-    현재는 "나" 치고 > 인기순 누르고 > "나연" 까지 추가로 치면 최신순으로 돌아갑니다 */
-    let timelineUse = [...timelineList];
-
-    const filter = (evt) => {
-        const searchKeyword = evt.target.value;
-
-        $el.lastElementChild.firstElementChild.innerHTML = '';
-
-        /* COMMENT predicate랑 comparator는 동일로직이 계속 재사용되므로, 성능을 위해 밖으로 뺄 수도 있을 것 같습니다
-        그런데, 로직 응집도를 위해 여기에 그대로 있는 게 더 나을 수도 있을 것 같습니다 (참고만 해주세요) */
-        const predicate = item => item.name.includes(searchKeyword) || item.text.includes(searchKeyword);
-        const timelineFiltered = timelineList.filter(predicate);
-        const timelineSearched = divide(timelineFiltered, ITEM_PER_ROW);
-        renderGridImgs(timelineSearched);
-
-        timelineUse = timelineFiltered;
-    }
-   
-    const sort = (evt) => {
-        const sortType = evt.target.dataset.sort;
-
-        $el.lastElementChild.firstElementChild.innerHTML = '';
-
-        // TODO 적절한 패턴 활용하여, 스위치문을 조금 더 견고한 방향으로 리팩토링 했습니다 (수정완료)
-        const comparator = {
-            latest: (a, b) => new Date(b.timestamp) - new Date(a.timestamp),
-            popular: (a, b) => (parseInt(b.clipCount)+2*parseInt(b.commentCount)) - (parseInt(a.clipCount)+2*parseInt(a.commentCount)),
-        }
-        const timelineCopied = [...timelineUse];
-        const timelineSorted = divide(timelineCopied.sort(comparator[sortType]), ITEM_PER_ROW);
-        renderGridImgs(timelineSorted);
-    }
-
-    const render = () => {
-        $parent.insertAdjacentHTML('beforeend', `
-            <article class="FyNDV">
-                <div class="Igw0E rBNOH YBx95 ybXk5 _4EzTm soMvl JI_ht bkEs3 DhRcB">
-                    <div class="sort_btns" style="display: flex; flex-direction: row;">
-                        <button class="sqdOP L3NKy y3zKF JI_ht" type="button" data-sort="latest">최신순</button>
-                        <button class="sqdOP L3NKy y3zKF JI_ht" type="button" data-sort="popular">인기순</button>
-                    </div>
-                    <h1 class="K3Sf1 srch_bar">
-                        <div class="Igw0E rBNOH eGOV_ ybXk5 _4EzTm">
-                            <div class="Igw0E IwRSH eGOV_ vwCYk">
-                                <div class="Igw0E IwRSH eGOV_ ybXk5 _4EzTm">
-                                    <div class="Igw0E IwRSH eGOV_ vwCYk">
-                                        <label class="NcCcD">
-                                            <input autocapitalize="none" autocomplete="off" class="j_2Hd iwQA6 RO68f M5V28" placeholder="검색" spellcheck="true" type="search" value="" />
-                                            <div class="DWAFP">
-                                                <div class="Igw0E IwRSH eGOV_ _4EzTm">
-                                                    <span aria-label="검색" class="glyphsSpriteSearch u-__7"></span>
-                                                </div>
-                                                <span class="rwQu7">검색</span>
-                                            </div>
-                                            <div class="Igw0E rBNOH YBx95 _4EzTm ItkAi O1flK fm1AK TxciK yiMZG"></div>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </h1>
-                </div>
-                <div>
-                    <div style="flex-direction: column; padding-bottom: 0px; padding-top: 0px;">
-                    </div>
-                </div>
-            </article>
-        `);
-    }
-
-    create();
-    
-    return { $el, listList };
-})(timelineContent.$el.firstElementChild, timeline.url);
-
-renderGridImgs(grid.listList);
+renderGridItem(grid.listList);
 
 })();

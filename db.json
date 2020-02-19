@@ -309,6 +309,10 @@
     {
       "id": "1",
       "data": {
+        "profile": {
+          "name": "twicetagram",
+          "img": "/profile.jpg"
+        },
         "imgList": [
           "/01.jpg",
           "/02.jpg",
