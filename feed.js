@@ -216,9 +216,34 @@ const Feed = ($parent, profileData = {}, pageDataList = []) => {
     const addFeedItems = (profileData = {}, pageDataList = []) => {
         const firstIndex = $parent.children.length;
         render(profileData, pageDataList);
-        $elList.push(...[].slice.call($parent.children, firstIndex));
+        
+        /* COMMENT 디버깅 꼼꼼히 안 해봤으면 발견 못 하셨을텐데, 정말 잘 하셨습니다 */
+        const newlyAddedList = [].slice.call($parent.children, firstIndex);
+        $elList.push(...newlyAddedList);
+
+        lazyLoadImg(newlyAddedList);
     }
 
+    const lazyLoadImg = (newlyAddedList = []) => {
+        /* TODO 현재는 페이지수 만큼 io객체가 생성되고 있습니다, 만약 10페이지, 100페이지, ... 가 있다면 그 만큼 생성됩니다
+        로직상 Feed는 List를 담는 컴포넌트이기 때문에, 사실 io는 하나만 있으면 충분합니다
+        io 생성은 컴포넌트 레벨로 올리고, observe하는 로직만 반복되면 성능이 개선될 수 있을 것 같습니다 */
+        const io = new IntersectionObserver((entryList, observer) => {
+            entryList.forEach(entry => {
+                if(!entry.isIntersecting) { return; }
+                /* COMMENT 스타일에 사용된 class는 컴포넌트 로직에서 사용이 바람직하지 못합니다 (잘하셨어요)
+                다만, 현재 추가된 class의 컨벤션이 추후 언젠가 추가될 스타일과 충돌할 여지가 있습니다
+                (참고로 NHN에서는, 꼭 필요할 경우 js-classname 같은 이름의 class를 권장합니다)
+                만약 제가 했다면 img[data-src] 정도로 썼을 것 같은데, 여기부터는 취향이라 참고만 해주세요 */
+                const $img = entry.target.querySelector(".main_img");
+                $img.src = $img.dataset.src;
+                delete $img.dataset.src;
+                observer.unobserve(entry.target);
+            }, {rootMargin : '100px'});
+        });
+        newlyAddedList.forEach($feed => io.observe($feed));
+    }
+ 
     const render = (profileData, pageDataList) => {
         const html = pageDataList.reduce((html, data) => {
             html += `
