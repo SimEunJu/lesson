@@ -183,6 +183,8 @@ const Item = (() => {
         this.$left = this.$el.querySelector('.js-left');
         this.$right = this.$el.querySelector('.js-right');
         this.$pagebar = this.$el.querySelector('.js-pagebar');
+        
+        this.addSliderEvent();
     }
     const proto = Item.prototype;
 
@@ -191,11 +193,61 @@ const Item = (() => {
     proto.destroy = function() {
         this.$parent.removeChild(this.$el);
     }
+    proto.addSliderEvent = function() {
+        this._imgCurIdx = 0;
+        this._END_OF_IMG_LIST = this._dataList.length - 1;
+        this._START_OF_IMG_LIST = 0;
+        this._sliderWidth = innerWidth;
+        
+        this.$left.style.display = 'none';
+        if(this._dataList.length === 1){
+            this.$right.style.display = 'none';
+        }
+
+        this.$rightClick = this.rightClick.bind(this);
+        this.$right.addEventListener('click', this.$rightClick);
+
+        this.$leftClick = this.leftClick.bind(this);
+        this.$left.addEventListener('click', this.$leftClick);
+
+        this.$resize = this.resize.bind(this);
+        window.addEventListener('resize', this.$resize);
+    }
+    proto.rightClick = function(){
+        this.$left.style.display = '';
+    
+        const nextImgIdx = this._imgCurIdx + 1;
+        this.$slider.style.transform = `translateX(-${this._sliderWidth*nextImgIdx}px)`;
+        this.movePageBar(this._imgCurIdx, nextImgIdx);
+        this._imgCurIdx = nextImgIdx;
+        
+        if(this._imgCurIdx === this._END_OF_IMG_LIST) this.$right.style.display = 'none';    
+    }
+    proto.leftClick = function(){
+        this.$right.style.display = '';
+        
+        const nextImgIdx = this._imgCurIdx - 1;
+        this.$slider.style.transform = `translateX(-${this._sliderWidth*nextImgIdx}px)`;   
+        this.movePageBar(this._imgCurIdx, nextImgIdx);
+        this._imgCurIdx = nextImgIdx;
+        
+        if(this._imgCurIdx === this._START_OF_IMG_LIST) this.$left.style.display = 'none';  
+    }
+    proto.movePageBar = function(prevIdx, nextIdx){
+        const prevPage = this.$pagebar.children[prevIdx];
+        prevPage.className = prevPage.className.replace(/\s+?XCodT/,'');
+
+        const nextPage = this.$pagebar.children[nextIdx];
+        nextPage.className = nextPage.className + ' XCodT';
+    }
 
     proto.click = function() {
         // TODO $left/$right 화살표 숨김/표시 (필요한 로직 추가)
+        
         // TODO this.$slider.style.transform = `translateX(${이동좌표}px)`;
+
         // TODO $pagebar 이미지에 대응되는 엘리먼트로 XCodT 클래스 이동 (on 처리)
+
         // TODO 가로사이즈는 innerWidth로 직접 잡거나, innerWidth를 캐싱해두고 사용
     }
     proto.resize = function() {
@@ -207,6 +259,9 @@ const Item = (() => {
             ${this.htmlSliderImgs(this._dataList)}
         `);
         // TODO 리프레시 전 슬라이드 이미지 다시 노출 (좌표보정)
+        this._sliderWidth = innerWidth;
+        this.$slider.style.transform = `translateX(-${this._sliderWidth*(this._imgCurIdx)}px)`;
+        this.movePageBar(0, this._imgCurIdx);
         // TODO 가로사이즈는 innerWidth로 직접 잡거나, innerWidth를 캐싱해두고 사용
     }
 
@@ -219,7 +274,7 @@ const Item = (() => {
                             <div role="button" tabindex="0" class="ZyFrc">
                                 <div class="eLAPa RzuR0">
                                     <div class="KL4Bh" style="padding-bottom: 100%;">
-                                        <img class="FFVAD" decoding="auto" src="${common.IMG_PATH}${img}" style="object-fit: cover;">
+                                        <img class="FFVAD" decoding="auto" src="${common.IMG_PATH}${img}" style="width: ${innerWidth}px; object-fit: cover;">
                                     </div>
                                     <div class="_9AhH0"></div>
                                 </div>
