@@ -172,28 +172,16 @@ const ItemDetail = (() => {
     return ItemDetail;
 })();
 
-const Item = (() => {
-    const Item = function($parent, detailData = {}, imgDataList = [], profileData = {}) {
-        this.$parent = $parent;
+const BasicSlider = (() => {
+    const BasicSlider = function($parent, imgDataList = []){
+        Slider.call(this);
         this._dataList = imgDataList;
-        this.render(detailData, profileData);
-        this.$el = this.$parent.firstElementChild;
-        this.$slider = this.$el.querySelector('.js-slider');
-        this.$sliderList = this.$slider.querySelector('ul');
-        this.$left = this.$el.querySelector('.js-left');
-        this.$right = this.$el.querySelector('.js-right');
-        this.$pagebar = this.$el.querySelector('.js-pagebar');
-        
-        this.addSliderEvent();
-    }
-    const proto = Item.prototype;
+        this.$slider = $parent.querySelector('.js-slider');
+        this.$sliderList = $parent.querySelector('ul');
+        this.$left = $parent.querySelector('.js-left');
+        this.$right = $parent.querySelector('.js-right');
+        this.$pagebar = $parent.querySelector('.js-pagebar');
 
-    proto.create = function() {
-    }
-    proto.destroy = function() {
-        this.$parent.removeChild(this.$el);
-    }
-    proto.addSliderEvent = function() {
         this._imgCurIdx = 0;
         this._END_OF_IMG_LIST = this._dataList.length - 1;
         this._START_OF_IMG_LIST = 0;
@@ -204,16 +192,17 @@ const Item = (() => {
             this.$right.style.display = 'none';
         }
 
-        this.$rightClick = this.rightClick.bind(this);
-        this.$right.addEventListener('click', this.$rightClick);
-
-        this.$leftClick = this.leftClick.bind(this);
-        this.$left.addEventListener('click', this.$leftClick);
-
-        this.$resize = this.resize.bind(this);
-        window.addEventListener('resize', this.$resize);
     }
-    proto.rightClick = function(){
+    
+    BasicSlider.prototype = Object.create(Slider.prototype);
+    BasicSlider.prototype.constructor = BasicSlider;
+    const proto = BasicSlider.prototype;
+    
+    // TODO $left/$right 화살표 숨김/표시 (필요한 로직 추가)
+    // TODO this.$slider.style.transform = `translateX(${이동좌표}px)`;
+    // TODO $pagebar 이미지에 대응되는 엘리먼트로 XCodT 클래스 이동 (on 처리)
+    // TODO 가로사이즈는 innerWidth로 직접 잡거나, innerWidth를 캐싱해두고 사용
+    proto.moveRight = function(){
         this.$left.style.display = '';
     
         const nextImgIdx = this._imgCurIdx + 1;
@@ -223,7 +212,7 @@ const Item = (() => {
         
         if(this._imgCurIdx === this._END_OF_IMG_LIST) this.$right.style.display = 'none';    
     }
-    proto.leftClick = function(){
+    proto.moveLeft = function(){
         this.$right.style.display = '';
         
         const nextImgIdx = this._imgCurIdx - 1;
@@ -231,7 +220,7 @@ const Item = (() => {
         this.movePageBar(this._imgCurIdx, nextImgIdx);
         this._imgCurIdx = nextImgIdx;
         
-        if(this._imgCurIdx === this._START_OF_IMG_LIST) this.$left.style.display = 'none';  
+        if(this._imgCurIdx === this._START_OF_IMG_LIST) this.$left.style.display = 'none'; 
     }
     proto.movePageBar = function(prevIdx, nextIdx){
         const prevPage = this.$pagebar.children[prevIdx];
@@ -240,53 +229,78 @@ const Item = (() => {
         const nextPage = this.$pagebar.children[nextIdx];
         nextPage.className = nextPage.className + ' XCodT';
     }
-
-    proto.click = function() {
-        // TODO $left/$right 화살표 숨김/표시 (필요한 로직 추가)
-        
-        // TODO this.$slider.style.transform = `translateX(${이동좌표}px)`;
-
-        // TODO $pagebar 이미지에 대응되는 엘리먼트로 XCodT 클래스 이동 (on 처리)
-
-        // TODO 가로사이즈는 innerWidth로 직접 잡거나, innerWidth를 캐싱해두고 사용
-    }
     proto.resize = function() {
         // HACK 현재 데이터바인딩을 지원하지 않으므로, 리스트 모든 엘리먼트 지우고 새로 렌더링
         while(this.$sliderList.firstChild) {
             this.$sliderList.removeChild(this.$sliderList.firstChild);
         }
         this.$sliderList.insertAdjacentHTML('beforeend', `
-            ${this.htmlSliderImgs(this._dataList)}
+            ${BasicSlider.htmlSliderImgs(this._dataList)}
         `);
         // TODO 리프레시 전 슬라이드 이미지 다시 노출 (좌표보정)
-        this._sliderWidth = innerWidth;
-        this.$slider.style.transform = `translateX(-${this._sliderWidth*(this._imgCurIdx)}px)`;
-        this.movePageBar(0, this._imgCurIdx);
         // TODO 가로사이즈는 innerWidth로 직접 잡거나, innerWidth를 캐싱해두고 사용
+        this._sliderWidth = innerWidth;
+        const sliderStyle = this.$slider.style;
+        sliderStyle.transitionDuration = '';
+        sliderStyle.transform = `translateX(-${this._sliderWidth*(this._imgCurIdx)}px)`;
+        this.movePageBar(0, this._imgCurIdx);
+        setTimeout(() => {sliderStyle.transitionDuration = '0.25s';}, 100);
     }
+    proto.addSliderEvent = function() {
+        this.$rightClick = this.moveRight.bind(this);
+        this.$right.addEventListener('click', this.$rightClick);
 
-    proto.htmlSliderImgs = function(imgDataList) {
-        const imgs = imgDataList.reduce((html, img) => {
-            html += `
-                <li class="_-1_m6" style="opacity: 1; width: ${innerWidth}px;">
-                    <div class="bsGjF" style="margin-left: 0px; width: ${innerWidth}px;">
-                        <div class="Igw0E IwRSH eGOV_ _4EzTm" style="width: ${innerWidth}px;">
-                            <div role="button" tabindex="0" class="ZyFrc">
-                                <div class="eLAPa RzuR0">
-                                    <div class="KL4Bh" style="padding-bottom: 100%;">
-                                        <img class="FFVAD" decoding="auto" src="${common.IMG_PATH}${img}" style="width: ${innerWidth}px; object-fit: cover;">
-                                    </div>
-                                    <div class="_9AhH0"></div>
+        this.$leftClick = this.moveLeft.bind(this);
+        this.$left.addEventListener('click', this.$leftClick);
+
+        this.$resize = this.resize.bind(this);
+        window.addEventListener('resize', this.$resize);
+    }
+    return BasicSlider;
+
+})();
+
+BasicSlider.htmlSliderImgs = function(imgDataList) {
+    const imgs = imgDataList.reduce((html, img) => {
+        html += `
+            <li class="_-1_m6" style="opacity: 1; width: ${innerWidth}px;">
+                <div class="bsGjF" style="margin-left: 0px; width: ${innerWidth}px;">
+                    <div class="Igw0E IwRSH eGOV_ _4EzTm" style="width: ${innerWidth}px;">
+                        <div role="button" tabindex="0" class="ZyFrc">
+                            <div class="eLAPa RzuR0">
+                                <div class="KL4Bh" style="padding-bottom: 100%;">
+                                    <img class="FFVAD" decoding="auto" src="${common.IMG_PATH}${img}" style="width: ${innerWidth}px; object-fit: cover;">
                                 </div>
+                                <div class="_9AhH0"></div>
                             </div>
                         </div>
                     </div>
-                </li>
-            `;
-            return html;
-        }, '');
-        return imgs;
+                </div>
+            </li>
+        `;
+        return html;
+    }, '');
+    return imgs;
+}
+
+const Item = (() => {
+    const Item = function($parent, detailData = {}, imgDataList = [], profileData = {}) {
+        this.$parent = $parent;
+        this._dataList = imgDataList;
+        this.render(detailData, profileData);
+        this.$el = this.$parent.firstElementChild;
+        
+        this._slider = new BasicSlider(this.$el, imgDataList);
+        this._slider.addSliderEvent();
     }
+    const proto = Item.prototype;
+
+    proto.create = function() {
+    }
+    proto.destroy = function() {
+        this.$parent.removeChild(this.$el);
+    }
+
     proto.render = function(data, profileData) {
         const navs = this._dataList.reduce((html, img, index) => {
             const on = index === 0 ? 'XCodT' : '';
@@ -318,7 +332,7 @@ const Item = (() => {
                                         <div class="js-slider MreMs" tabindex="0" style="transition-duration: 0.25s; transform: translateX(0px);">
                                             <div class="qqm6D">
                                                 <ul class="YlNGR" style="padding-left: 0px; padding-right: 0px;">
-                                                    ${this.htmlSliderImgs(this._dataList)}
+                                                    ${BasicSlider.htmlSliderImgs(this._dataList)}
                                                 </ul>
                                             </div>
                                         </div>
