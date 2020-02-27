@@ -174,7 +174,7 @@ const ItemDetail = (() => {
 
 const BasicSlider = (() => {
     const BasicSlider = function($parent, imgDataList = []){
-        Slider.call(this);
+        //Slider.call(this);
         this._dataList = imgDataList;
         this.$slider = $parent.querySelector('.js-slider');
         this.$sliderList = $parent.querySelector('ul');
@@ -194,8 +194,8 @@ const BasicSlider = (() => {
 
     }
     
-    BasicSlider.prototype = Object.create(Slider.prototype);
-    BasicSlider.prototype.constructor = BasicSlider;
+    //BasicSlider.prototype = Object.create(Slider.prototype);
+    //BasicSlider.prototype.constructor = BasicSlider;
     const proto = BasicSlider.prototype;
     
     // TODO $left/$right 화살표 숨김/표시 (필요한 로직 추가)
