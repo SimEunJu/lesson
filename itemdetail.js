@@ -174,8 +174,11 @@ const ItemDetail = (() => {
 
 const BasicSlider = (() => {
     const BasicSlider = function($parent, imgDataList = []){
-        //Slider.call(this);
         this._dataList = imgDataList;
+        /* FIXME 부모 엘리먼트에 특정 클래스를 넣어두고, 자식 내부에서 부모를 직접 룩업하고 있습니다
+        부모 컴포넌트와 강하게 결합되어 있어, 로직만 복잡해지고 모듈로 쪼개는 의미가 많이 없습니다
+        BasicSlider가 자식 컴포넌트라면 애초에 부모에 있는 해당 템플릿까지 다 끌고와야 할 것 같고,
+        로직을 보조하는 객체라면, 구체적인 부모의 구조를 알지 않고도 독립적으로 동작할 수 있게 해주세요 */
         this.$slider = $parent.querySelector('.js-slider');
         this.$sliderList = $parent.querySelector('ul');
         this.$left = $parent.querySelector('.js-left');
@@ -187,21 +190,21 @@ const BasicSlider = (() => {
         this._START_OF_IMG_LIST = 0;
         this._sliderWidth = innerWidth;
         
+        /* TODO DOM에 대한 show/hide 처리는 생성자의 역할을 벗어나는 로직 같습니다
+        아무리 간단한 코드라도, 비즈니스 로직은 별도의 메소드로 분리 해주세요
+        moveRight와 moveLeft에 있는 첫줄/마지막줄도 끌어다가 한 메소드로 공통화도 가능할 것 같습니다 */
         this.$left.style.display = 'none';
         if(this._dataList.length === 1){
             this.$right.style.display = 'none';
         }
-
     }
-    
-    //BasicSlider.prototype = Object.create(Slider.prototype);
-    //BasicSlider.prototype.constructor = BasicSlider;
+
     const proto = BasicSlider.prototype;
     
-    // TODO $left/$right 화살표 숨김/표시 (필요한 로직 추가)
-    // TODO this.$slider.style.transform = `translateX(${이동좌표}px)`;
-    // TODO $pagebar 이미지에 대응되는 엘리먼트로 XCodT 클래스 이동 (on 처리)
-    // TODO 가로사이즈는 innerWidth로 직접 잡거나, innerWidth를 캐싱해두고 사용
+    /* FIXME moveRight와 moveLeft의 로직은 대부분 공통화가 가능할 것 같습니다
+    고도화시 내부로직의 수정이 필요할 경우, 동일한 코드를 여러 번 수정해야 한다는 건 알 수 없습니다
+    이런 코드가 쌓이고 쌓이면, 뭐 하나 수정하기 무섭고 어디에서 터질지 모르는 불안정한 코드가 됩니다
+    반복로직은 유지보수 관점에서 항상 공통화 해주시면 좋을 것 같습니다 */
     proto.moveRight = function(){
         this.$left.style.display = '';
     
@@ -210,6 +213,7 @@ const BasicSlider = (() => {
         this.movePageBar(this._imgCurIdx, nextImgIdx);
         this._imgCurIdx = nextImgIdx;
         
+        /* TODO 로직 한줄쓰기는 지양 해주시고, 의미있는 로직은 반드시 { 중괄호 }로 묶어주세요 */
         if(this._imgCurIdx === this._END_OF_IMG_LIST) this.$right.style.display = 'none';    
     }
     proto.moveLeft = function(){
@@ -222,6 +226,9 @@ const BasicSlider = (() => {
         
         if(this._imgCurIdx === this._START_OF_IMG_LIST) this.$left.style.display = 'none'; 
     }
+    /* TODO DOM에 대한 스트링 연산은 성능 상으로 불리하고, 버그도 발생하기 쉽습니다
+    명시적으로 classList 같은 API를 사용하는 게 조금 더 바람직할 것 같습니다
+    마침 아래 movePageBar 호출시에 BUG 발생했으니, 확인해보시면 좋을 것 같아요! */
     proto.movePageBar = function(prevIdx, nextIdx){
         const prevPage = this.$pagebar.children[prevIdx];
         prevPage.className = prevPage.className.replace(/\s+?XCodT/,'');
@@ -230,29 +237,46 @@ const BasicSlider = (() => {
         nextPage.className = nextPage.className + ' XCodT';
     }
     proto.resize = function() {
-        // HACK 현재 데이터바인딩을 지원하지 않으므로, 리스트 모든 엘리먼트 지우고 새로 렌더링
         while(this.$sliderList.firstChild) {
             this.$sliderList.removeChild(this.$sliderList.firstChild);
         }
         this.$sliderList.insertAdjacentHTML('beforeend', `
             ${BasicSlider.htmlSliderImgs(this._dataList)}
         `);
-        // TODO 리프레시 전 슬라이드 이미지 다시 노출 (좌표보정)
-        // TODO 가로사이즈는 innerWidth로 직접 잡거나, innerWidth를 캐싱해두고 사용
         this._sliderWidth = innerWidth;
         const sliderStyle = this.$slider.style;
+        /* TODO 리사이즈 동작이 깔끔하다 했더니 이런 처리를 해두셨네요 (잘 하셨어요!)
+        강제지연이 필요했던 것 같은데, 최소지연(0 또는 생략)을 줘도 동작하니 참고 해주세요! */
         sliderStyle.transitionDuration = '';
         sliderStyle.transform = `translateX(-${this._sliderWidth*(this._imgCurIdx)}px)`;
+        /* FIXME 메소드에 더미 파라미터를 꽂기 보다는, 메소드 자체를 리팩토링하는 게 바람직합니다
+        현재는 리사이즈시에 필요한 로직이 아니라서, 그냥 아래 라인을 지우면 될 것 같습니다 */
+        /* BUG 리사이즈시, 해당 시점의 페이지바 dot이 고정되는 버그가 있습니다
+        On클래스(XCodT)가 하나씩 추가로 계속 붙고 있습니다
+        우선 아래 라인만 제거하면 해결될 것 같고, movePageBar 자체에 붙인 코맨트도 참조 해주세요 */
         this.movePageBar(0, this._imgCurIdx);
-        setTimeout(() => {sliderStyle.transitionDuration = '0.25s';}, 100);
+        setTimeout(() => {
+            sliderStyle.transitionDuration = '0.25s';
+        });
     }
     proto.addSliderEvent = function() {
+        /* FIXME 아래 이벤트는 어차피 컴포넌트에서 생성한 DOM 엘리먼트에 직접 걸리는 이벤트이고
+        destroy와 함께 DOM트리에서 제거하므로, 눈에 보이는 문제는 없어 보입니다
+        하지만 실제로 리스너가 제거되지 않기 때문에, SPA 환경에서 메모리누수가 쌓일 수 있습니다
+        이벤트리스너는 가능하면 안전하게 명시적으로 해제하는 편이 좋습니다
+        관련해서 이 글 읽어보시면 도움될 것 같습니다
+        https://ui.toast.com/weekly-pick/ko_20160826/
+        https://v8.dev/blog/tracing-js-dom */
         this.$rightClick = this.moveRight.bind(this);
         this.$right.addEventListener('click', this.$rightClick);
 
         this.$leftClick = this.moveLeft.bind(this);
         this.$left.addEventListener('click', this.$leftClick);
 
+        /* BUG destroy 시에 this.$resize 이벤트리스너가 제거되지 않아 메모리 누수가 쌓이고 있습니다
+        root.destroy() 후 리사이즈 이벤트 발생시켜 보시면, 전부 살아있는 것 확인하실 수 있습니다
+        컴포넌트에서 추가되는 모든 추가로직은 대응되는 제거로직을 작성 해주시고,
+        destroy에서는 추가된 모든 것들을 제거하는 로직을 붙여주세요 */
         this.$resize = this.resize.bind(this);
         window.addEventListener('resize', this.$resize);
     }
@@ -260,6 +284,9 @@ const BasicSlider = (() => {
 
 })();
 
+/* FIXME 스태틱 메소드로 바람직하지 않은 로직 같습니다!
+Item으로 땡겨가거나 BasicSlider로 땡겨가주세요
+위에 남겨드린 코맨트에 대한 리팩토링이 끝나면 자연스럽게 방향이 정해집니다 */
 BasicSlider.htmlSliderImgs = function(imgDataList) {
     const imgs = imgDataList.reduce((html, img) => {
         html += `
